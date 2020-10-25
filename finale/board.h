@@ -11,7 +11,8 @@
 //     int *board_width: board width
 //     int *board_height: board_height
 // return:
-//     board
+//     success: board
+//     failure: board[0][0] == -2
 char **get_board(
     const char *fname,
     int *board_width,

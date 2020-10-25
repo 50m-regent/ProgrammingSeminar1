@@ -4,9 +4,14 @@ char **get_board(const char *fname, int *board_width, int *board_height) {
     int x, y;
     char buf[81];
     FILE *fp;
+    char *tp;
     char **board;
 
-    if (NULL == (fp = fopen(fname, "r"))) return board;
+    if (NULL == (fp = fopen(fname, "r"))) {
+        board[0][0] = -2;
+        puts("Error: defective board file");
+        return board;
+    }
 
     fgets(buf, sizeof(buf), fp);
     *board_width  = atoi(strtok(buf, ","));
@@ -16,10 +21,21 @@ char **get_board(const char *fname, int *board_width, int *board_height) {
     for (y = 0; y < *board_height; y++) {
         board[y] = malloc(*board_width * sizeof(char));
 
-        fgets(buf, sizeof(buf), fp);
+        if (NULL == fgets(buf, sizeof(buf), fp)) {
+            board[0][0] = -2;
+            puts("Error: defective board data");
+            return board;
+        }
+
         board[y][0] = atoi(strtok(buf, ","));
         for (x = 1; x < *board_width; x++) {
-            board[y][x] = atoi(strtok(NULL, ","));
+            if (NULL == (tp = strtok(NULL, ","))) {
+                board[0][0] = -2;
+                puts("Error: defective board data");
+                return board;
+            }
+
+            board[y][x] = atoi(tp);
         }
     }
 
