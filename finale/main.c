@@ -1,12 +1,14 @@
 #include "header.h"
 
+#define FILE_PATH "./data.csv"
+
 int main() {
     int
         board_width,
         board_height;
 
     char **board;
-    if (-2 == (board = get_board("./data.csv", &board_width, &board_height))[0][0]) {
+    if (-2 == (board = load_board(FILE_PATH, &board_width, &board_height))[0][0]) {
         return EXIT_FAILURE;
     }
 

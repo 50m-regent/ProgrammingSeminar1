@@ -1,6 +1,43 @@
 #include "board.h"
 
-char **get_board(const char *fname, int *board_width, int *board_height) {
+int save_board(const char *fname, char **board, int board_width, int board_height) {
+    int x, y;
+    FILE *fp;
+
+    if (NULL == (fp = fopen(fname, "w+"))) {
+        puts("Error: Can't open file");
+        return EXIT_FAILURE;
+    }
+
+    fprintf(fp, "%d, %d\n", board_width, board_height);
+
+    for (y = 0; y < board_height; y++) {
+        fprintf(fp, "%d", board[y][0]);
+        for (x = 1; x < board_width; x++) {
+            fprintf(fp, ", %d", board[y][x]);
+        }
+        fprintf(fp, "\n");
+    }
+
+    fclose(fp);
+    return EXIT_SUCCESS;
+}
+
+int save_record(const char *fname, char *record) {
+    FILE *fp;
+
+    if (NULL == (fp = fopen(fname, "w+"))) {
+        puts("Error: Can't open file");
+        return EXIT_FAILURE;
+    }
+
+    fprintf(fp, "%s", record);
+
+    fclose(fp);
+    return EXIT_SUCCESS;
+}
+
+char **load_board(const char *fname, int *board_width, int *board_height) {
     int x, y;
     char buf[81];
     FILE *fp;
@@ -32,6 +69,7 @@ char **get_board(const char *fname, int *board_width, int *board_height) {
             if (NULL == (tp = strtok(NULL, ","))) {
                 board[0][0] = -2;
                 puts("Error: defective board data");
+                fclose(fp);
                 return board;
             }
 
