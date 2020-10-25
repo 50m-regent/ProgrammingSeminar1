@@ -35,4 +35,10 @@ int play_game(
     int board_height
 );
 
+void endroll(
+    char** board,
+    int board_width,
+    int board_height
+);
+
 #endif
