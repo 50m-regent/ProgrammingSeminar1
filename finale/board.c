@@ -106,9 +106,9 @@ char **restore(const char *fname, int *board_width, int *board_height) {
     }
 
     board[*board_height / 2 - 1][*board_width / 2 - 1] =
-    board[*board_height / 2][*board_width / 2] = 1;
+    board[*board_height / 2][*board_width / 2] = -1;
     board[*board_height / 2 - 1][*board_width / 2] =
-    board[*board_height / 2][*board_width / 2 - 1] = -1;
+    board[*board_height / 2][*board_width / 2 - 1] = 1;
 
     fgets(buf, sizeof(buf), fp);
     while (strlen(buf)) {
