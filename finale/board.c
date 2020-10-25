@@ -49,12 +49,20 @@ void print_board(char **board, int board_width, int board_height) {
     system("clear");
     printf("\x1b[42m");
 
-    for (y = 0; y < board_height; y++) {
-        for (x = 0; x < board_width; x++) {
-            printf("---");
-        }
-        puts("-");
+    printf("   ");
+    for (x = 0; x < board_width; x++) {
+        printf("%c  ", x + 'A');
+    }
+    puts("");
 
+    for (y = 0; y < board_height; y++) {
+        printf("  ");
+        for (x = 0; x < board_width; x++) {
+            printf("+--");
+        }
+        puts("+");
+
+        printf(" %d", y + 1);
         for (x = 0; x < board_width; x++) {
             printf("|");
 
@@ -62,6 +70,8 @@ void print_board(char **board, int board_width, int board_height) {
                 printf("⚫️");
             } else if (-1 == board[y][x]) {
                 printf("⚪️");
+            } else if (2 == board[y][x]) {
+                printf("・");
             } else {
                 printf("  ");
             }
@@ -70,10 +80,12 @@ void print_board(char **board, int board_width, int board_height) {
         puts("|");
     }
 
+    printf("  ");
     for (x = 0; x < board_width; x++) {
-        printf("---");
+        printf("+--");
     }
-    puts("-");
+    puts("+");
+    printf("\x1b[0m");
 }
 
 void free_board(char **board, int board_height) {
