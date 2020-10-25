@@ -3,6 +3,9 @@
 #include <unistd.h>
 #include <time.h>
 
+#define BOARDW 10
+#define BOARDH 10
+
 int main () {
     srand((unsigned)time(NULL));
 
@@ -13,19 +16,19 @@ int main () {
         puts("Hiding target...\n");
         sleep(1);
 
-        targx = rand() % 10 + 1;
-        targy = rand() % 10 + 1;
+        targx = rand() % BOARDW + 1;
+        targy = rand() % BOARDH + 1;
 
         do {
             do {
                 printf("Predict X<< ");
                 scanf("%d", &predx);
-            } while (predx < 1 || predx > 10);
+            } while (predx < 1 || predx > BOARDW);
 
             do {
                 printf("Predict Y<< ");
                 scanf("%d", &predy);
-            } while (predy < 1 || predy > 10);
+            } while (predy < 1 || predy > BOARDH);
 
             printf(
                 "Hint: %d\n\n",
