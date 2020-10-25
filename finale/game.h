@@ -8,6 +8,9 @@
 #include "board.h"
 #include "player.h"
 
+#define RECORD_PATH "./record.txt"
+#define SAVE_PATH "./board.csv"
+
 // flip disc
 void flip(
     char** board,

@@ -23,7 +23,7 @@ int save_board(const char *fname, char **board, int board_width, int board_heigh
     return EXIT_SUCCESS;
 }
 
-int save_record(const char *fname, char *record) {
+int save_record(const char *fname, char *record, int board_width, int board_height) {
     FILE *fp;
 
     if (NULL == (fp = fopen(fname, "w+"))) {
@@ -31,7 +31,7 @@ int save_record(const char *fname, char *record) {
         return EXIT_FAILURE;
     }
 
-    fprintf(fp, "%s", record);
+    fprintf(fp, "%d, %d\n%s", board_width, board_height, record);
 
     fclose(fp);
     return EXIT_SUCCESS;
@@ -75,6 +75,52 @@ char **load_board(const char *fname, int *board_width, int *board_height) {
 
             board[y][x] = atoi(tp);
         }
+    }
+
+    fclose(fp);
+    return board;
+}
+
+char **restore(const char *fname, int *board_width, int *board_height) {
+    int x, y, turn = 0;
+    char buf[RECORD_LEN], tmp[RECORD_LEN];
+    FILE *fp;
+    char **board;
+
+    if (NULL == (fp = fopen(fname, "r"))) {
+        board[0][0] = -2;
+        puts("Error: defective record file");
+        return board;
+    }
+
+    fgets(buf, sizeof(buf), fp);
+    *board_width  = atoi(strtok(buf, ","));
+    *board_height = atoi(strtok(NULL, ","));
+
+    board = malloc(*board_height * sizeof(char *));
+    for (y = 0; y < *board_height; y++) {
+        board[y] = malloc(*board_width * sizeof(char));
+        for (x = 0; x < *board_width; x++) {
+            board[y][x] = 0;
+        }
+    }
+
+    board[*board_height / 2 - 1][*board_width / 2 - 1] =
+    board[*board_height / 2][*board_width / 2] = 1;
+    board[*board_height / 2 - 1][*board_width / 2] =
+    board[*board_height / 2][*board_width / 2 - 1] = -1;
+
+    fgets(buf, sizeof(buf), fp);
+    while (strlen(buf)) {
+        x = (buf[0] > 'H') ? buf[0] - 'a' : buf[0] - 'A';
+        y = buf[1] - '1';
+
+        place(board, *board_width, *board_height, x, y, turn = (turn + 1) % 2);
+
+        strncpy(tmp, buf + 2, strlen(buf) - 2);
+        memset(buf, '\0', sizeof(buf));
+        strcpy(buf, tmp);
+        memset(tmp, '\0', sizeof(tmp));
     }
 
     fclose(fp);

@@ -1,9 +1,5 @@
 #include "game.h"
 
-#define RECORD_LEN 256
-#define RECORD_PATH "./record.txt"
-#define SAVE_PATH "./board.csv"
-
 void flip(char** board, int board_width, int board_height, int x, int y, int dx, int dy, int turn) {
     while (
         board[y][x] != (turn ? 1 : -1) &&
@@ -125,7 +121,7 @@ int play_game(char **board, int board_width, int board_height) {
         get_human_input(board, placeable, board_width, board_height, &x, &y);
         place(board, board_width, board_height, x, y, turn);
         sprintf(record, "%s%c%d", record, x + (turn ? 'A' : 'a'), y + 1);
-        save_record(RECORD_PATH, record);
+        save_record(RECORD_PATH, record, board_width, board_height);
         save_board(SAVE_PATH, board, board_width, board_height);
     }
 

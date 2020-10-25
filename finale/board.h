@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "game.h"
+
+#define RECORD_LEN 256
 
 // save board to csv
 int save_board(
@@ -16,11 +19,20 @@ int save_board(
 // save record to txt
 int save_record(
     const char *fname,
-    char *record
+    char *record,
+    int board_width,
+    int board_height
 );
 
 // read board and its size from csv
 char **load_board(
+    const char *fname,
+    int *board_width,
+    int *board_height
+);
+
+// load board from record
+char **restore(
     const char *fname,
     int *board_width,
     int *board_height
