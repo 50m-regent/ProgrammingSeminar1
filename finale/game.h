@@ -6,6 +6,42 @@
 #include <string.h>
 #include <unistd.h>
 #include "board.h"
+#include "player.h"
+
+// flip disc
+void flip(
+    char** board,
+    int board_width,
+    int board_height,
+    int x,
+    int y,
+    int dx,
+    int dy,
+    int turn
+);
+
+// place disc
+void place(
+    char **board,
+    int board_width,
+    int board_height,
+    int x,
+    int y,
+    int turn
+);
+
+// search one direction
+int search(
+    char** board,
+    int board_width,
+    int board_height,
+    int x,
+    int y,
+    int dx,
+    int dy,
+    int turn,
+    int cnt
+);
 
 // search for placeable cells
 char **scout(

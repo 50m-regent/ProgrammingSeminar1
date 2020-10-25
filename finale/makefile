@@ -1,5 +1,5 @@
 CC = gcc
-OBJS = board.c game.c
+OBJS = board.c game.c player.c
 
 main: main.c $(OBJS)
 	$(CC) $^ -o $@

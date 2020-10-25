@@ -1,13 +1,75 @@
 #include "game.h"
 
+void flip(char** board, int board_width, int board_height, int x, int y, int dx, int dy, int turn) {
+    while (
+        board[y][x] != (turn ? 1 : -1) &&
+        x >= 0 && x < board_width &&
+        y >= 0 && y < board_height
+    ) {
+        board[y][x] = (turn ? 1 : -1);
+        x += dx;
+        y += dy;
+    }
+}
+
+void place(char **board, int board_width, int board_height, int x, int y, int turn) {
+    int dx, dy;
+
+    board[y][x] = (turn ? 1 : -1);
+    for (dx = -1; 1 >= dx; dx++) {
+        for (dy = -1; 1 >= dy; dy++) {
+            if (dx || dy) {
+                if (search(board, board_width, board_height, x + dx, y + dy, dx, dy, turn, 0)) {
+                    flip(board, board_width, board_height, x + dx, y + dy, dx, dy, turn);
+                }
+            }
+        }
+    }
+}
+
+int search(char** board, int board_width, int board_height, int x, int y, int dx, int dy, int turn, int cnt) {
+    if (
+        x < 0 || x >= board_width ||
+        y < 0 || y >= board_height
+    ) {
+        return 0;
+    }
+    if (board[y][x] == 0) {
+        return 0;
+    }
+    if (
+        (0 == turn) && (-1 == board[y][x]) ||
+        (1 == turn) && (1 == board[y][x])
+    ) {
+        return cnt;
+    }
+    return search(board, board_width, board_height, x + dx, y + dy, dx, dy, turn, cnt + 1);
+}
+
 char **scout(char **board, int board_width, int board_height, int *placeable_cnt, int turn) {
-    int x, y;
+    int x, y, dx, dy;
     char **placeable = malloc(board_height * sizeof(char*));
     for (y = 0; y < board_height; y++) {
         placeable[y] = malloc(board_width * sizeof(char));
+        for (x = 0; x < board_width; x++) {
+            placeable[y][x] = 0;
+        }
     }
 
     *placeable_cnt = 0;
+    for (y = 0; y < board_width; y++) {
+        for (x = 0; x < board_height; x++) {
+            if (0 == board[y][x]) {
+                for (dx = -1; 1 >= dx; dx++) {
+                    for (dy = -1; 1 >= dy; dy++) {
+                        if (dx || dy) {
+                            *placeable_cnt += placeable[y][x] += search(board, board_width, board_height, x + dx, y + dy, dx, dy, turn, 0);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     return placeable;
 }
@@ -31,7 +93,8 @@ int print_score(char **board, int board_width, int board_height) {
 
 int play_game(char **board, int board_width, int board_height) {
     int
-        turn = 1,
+        x, y,
+        turn = 0,
         pass_cnt = 0,
         winner,
         placeable_cnt;
@@ -42,16 +105,20 @@ int play_game(char **board, int board_width, int board_height) {
         placeable = scout(board, board_width, board_height, &placeable_cnt, turn = (turn + 1) % 2);
 
         print_board(board, placeable, board_width, board_height);
-        printf("%s's turn\n", turn ? "White" : "Black");
         winner = print_score(board, board_width, board_height);
+        printf("%s's turn\n", turn ? "Black" : "White");
 
         if (0 == placeable_cnt) {
             pass_cnt++;
             puts("Pass");
             sleep(1);
+            continue;
         } else {
             pass_cnt = 0;
         }
+
+        get_human_input(board, placeable, board_width, board_height, &x, &y);
+        place(board, board_width, board_height, x, y, turn);
     }
 
     free_board(placeable, board_height);
