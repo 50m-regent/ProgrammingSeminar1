@@ -1,7 +1,15 @@
 #include "game.h"
 
-int scout(char **board, int board_width, int board_height, int turn) {
-    return 0;
+char **scout(char **board, int board_width, int board_height, int *placeable_cnt, int turn) {
+    int x, y;
+    char **placeable = malloc(board_height * sizeof(char*));
+    for (y = 0; y < board_height; y++) {
+        placeable[y] = malloc(board_width * sizeof(char));
+    }
+
+    *placeable_cnt = 0;
+
+    return placeable;
 }
 
 int print_score(char **board, int board_width, int board_height) {
@@ -26,16 +34,18 @@ int play_game(char **board, int board_width, int board_height) {
         turn = 1,
         pass_cnt = 0,
         winner,
-        placable_cnt;
+        placeable_cnt;
+
+    char **placeable;
 
     while (2 > pass_cnt) {
-        placable_cnt = scout(board, board_width, board_height, turn = (turn + 1) % 2);
+        placeable = scout(board, board_width, board_height, &placeable_cnt, turn = (turn + 1) % 2);
 
-        print_board(board, board_width, board_height);
+        print_board(board, placeable, board_width, board_height);
         printf("%s's turn\n", turn ? "White" : "Black");
         winner = print_score(board, board_width, board_height);
 
-        if (0 == placable_cnt) {
+        if (0 == placeable_cnt) {
             pass_cnt++;
             puts("Pass");
             sleep(1);
@@ -44,11 +54,14 @@ int play_game(char **board, int board_width, int board_height) {
         }
     }
 
+    free_board(placeable, board_height);
+
     return winner;
 }
 
 void endroll(char** board, int board_width, int board_height) {
-    print_board(board, board_width, board_height);
+    int tmp;
+    print_board(board, scout(board, board_width, board_height, &tmp, 0), board_width, board_height);
     puts("Game Finished!");
 
     int winner = print_score(board, board_width, board_height);

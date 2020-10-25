@@ -43,7 +43,7 @@ char **get_board(const char *fname, int *board_width, int *board_height) {
     return board;
 }
 
-void print_board(char **board, int board_width, int board_height) {
+void print_board(char **board, char** placeable, int board_width, int board_height) {
     int x, y;
 
     system("clear");
@@ -70,8 +70,8 @@ void print_board(char **board, int board_width, int board_height) {
                 printf("⚫️");
             } else if (-1 == board[y][x]) {
                 printf("⚪️");
-            } else if (2 == board[y][x]) {
-                printf("・");
+            } else if (placeable[y][x]) {
+                printf("%2d", placeable[y][x]);
             } else {
                 printf("  ");
             }

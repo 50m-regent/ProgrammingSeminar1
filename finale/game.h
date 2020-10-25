@@ -7,11 +7,12 @@
 #include <unistd.h>
 #include "board.h"
 
-// search for placable cells
-int scout(
+// search for placeable cells
+char **scout(
     char **board,
     int board_width,
     int board_height,
+    int *placeable_cnt,
     int turn
 );
 
@@ -23,12 +24,6 @@ int print_score(
 );
 
 // run game
-// args:
-//     char **board: board
-//     int board_width: board width
-//     int board_height: board height
-// return:
-//     winner (black: 1, white: -1, draw: 0)
 int play_game(
     char **board,
     int board_width,
