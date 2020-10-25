@@ -12,7 +12,7 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    board = restore("./record.txt", &board_width, &board_height);
+    // board = restore("./record.txt", &board_width, &board_height);
 
     play_game(board, board_width, board_height);
     endroll(board, board_width, board_height);
