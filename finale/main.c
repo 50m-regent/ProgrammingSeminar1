@@ -7,15 +7,15 @@ int main() {
         board_width,
         board_height;
 
-    char **board;
-    if (-2 == (board = load_board(FILE_PATH, &board_width, &board_height))[0][0]) {
+    Board board;
+    if (-2 == (board.board = load_board(FILE_PATH, &board))[0][0]) {
         return EXIT_FAILURE;
     }
 
     // board = restore("./record.txt", &board_width, &board_height);
 
-    play_game(board, board_width, board_height);
-    endroll(board, board_width, board_height);
+    play_game(&board);
+    endroll(&board);
 
     return EXIT_SUCCESS;
 }

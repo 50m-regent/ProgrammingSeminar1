@@ -2,15 +2,14 @@
 #define PLAYER
 
 #include <stdio.h>
+#include "board.h"
 
 // get human input
 void get_human_input(
-    char** board,
-    char** placeable,
-    int board_width,
-    int board_height,
-    int *x,
-    int *y
+    Board board, // board
+    char** placeable, // placeable map
+    int *x, // x input
+    int *y // y input
 );
 
 #endif

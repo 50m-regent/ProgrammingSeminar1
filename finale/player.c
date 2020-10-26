@@ -1,6 +1,6 @@
 #include "player.h"
 
-void get_human_input(char** board, char** placeable, int board_width, int board_height, int *x, int *y) {
+void get_human_input(Board board, char** placeable, int *x, int *y) {
     int is_first = 1;
     char c, d, e;
     do {
@@ -14,8 +14,8 @@ void get_human_input(char** board, char** placeable, int board_width, int board_
         *x = c - 'a';
         *y = d - '1';
     } while (
-        *x < 0 || *x >= board_width ||
-        *y < 0 || *y >= board_height ||
+        *x < 0 || *x >= board.width ||
+        *y < 0 || *y >= board.height ||
         0 == placeable[*y][*x]
     );
 }
