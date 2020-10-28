@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define RECORD_LEN 256
+
 typedef struct {
     char** board; // board
     int
@@ -13,8 +15,6 @@ typedef struct {
 } Board;
 
 #include "game.h"
-
-#define RECORD_LEN 256
 
 // save board to csv
 int save_board(

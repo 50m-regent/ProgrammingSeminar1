@@ -60,7 +60,8 @@ int print_score(
 
 // run game
 int play_game(
-    Board *board // board
+    Board *board, // board
+    char record[RECORD_LEN] // game record
 );
 // return: winner
 //     black: 1

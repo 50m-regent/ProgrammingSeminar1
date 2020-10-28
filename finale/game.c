@@ -2,9 +2,9 @@
 
 void flip(Board* board, int x, int y, int dx, int dy, int turn) {
     while (
-        board->board[y][x] != (turn ? 1 : -1) &&
         x >= 0 && x < board->width &&
-        y >= 0 && y < board->height
+        y >= 0 && y < board->height &&
+        board->board[y][x] != (turn ? 1 : -1)
     ) {
         board->board[y][x] = (turn ? 1 : -1);
         x += dx;
@@ -91,7 +91,7 @@ int print_score(Board board) {
     return (black > white) ? 1 : ((black < white) ? -1 : 0);
 }
 
-int play_game(Board *board) {
+int play_game(Board *board, char *history) {
     int
         x, y,
         turn = 0,
@@ -100,7 +100,9 @@ int play_game(Board *board) {
         placeable_cnt;
 
     char **placeable;
-    char record[RECORD_LEN] = "";
+    char record[RECORD_LEN];
+
+    sprintf(record, "%s", history);
 
     while (2 > pass_cnt) {
         placeable = scout(*board, &placeable_cnt, turn = (turn + 1) % 2);
@@ -119,6 +121,7 @@ int play_game(Board *board) {
         }
 
         get_human_input(*board, placeable, &x, &y);
+        
         place(board, x, y, turn);
         sprintf(record, "%s%c%d", record, x + (turn ? 'A' : 'a'), y + 1);
         save_record(RECORD_PATH, record, *board);

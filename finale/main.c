@@ -14,7 +14,7 @@ int main() {
 
     // board = restore("./record.txt", &board_width, &board_height);
 
-    play_game(&board);
+    play_game(&board, "");
     endroll(&board);
 
     return EXIT_SUCCESS;
