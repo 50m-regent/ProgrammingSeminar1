@@ -61,6 +61,7 @@ char **load_board(const char *fname, Board *board) {
         if (NULL == fgets(buf, sizeof(buf), fp)) {
             board_buf[0][0] = -2;
             puts("Error: defective board data");
+            fclose(fp);
             return board_buf;
         }
 
@@ -81,21 +82,9 @@ char **load_board(const char *fname, Board *board) {
     return board_buf;
 }
 
-char **restore(const char *fname, Board *board) {
-    int x, y, turn = 0;
-    char buf[RECORD_LEN], tmp[RECORD_LEN];
-    FILE *fp;
+void replay(Board *board, char record[RECORD_LEN]) {
+    int i, x, y, record_len = strlen(record), turn = 0;
     char **board_buf;
-
-    if (NULL == (fp = fopen(fname, "r"))) {
-        board_buf[0][0] = -2;
-        puts("Error: defective record file");
-        return board_buf;
-    }
-
-    fgets(buf, sizeof(buf), fp);
-    board->width  = atoi(strtok(buf, ","));
-    board->height = atoi(strtok(NULL, ","));
 
     board_buf = malloc(board->height * sizeof(char *));
     for (y = 0; y < board->height; y++) {
@@ -112,21 +101,31 @@ char **restore(const char *fname, Board *board) {
 
     board->board = board_buf;
 
-    fgets(buf, sizeof(buf), fp);
-    while (strlen(buf)) {
-        x = (buf[0] > 'H') ? buf[0] - 'a' : buf[0] - 'A';
-        y = buf[1] - '1';
+    for (i = 0; i < record_len; i++) {
+        x = (record[i] > 'H') ? record[i] - 'a' : record[i] - 'A';
+        y = record[++i] - '1';
 
         place(board, x, y, turn = (turn + 1) % 2);
+    }
+}
 
-        strncpy(tmp, buf + 2, strlen(buf) - 2);
-        memset(buf, '\0', sizeof(buf));
-        strcpy(buf, tmp);
-        memset(tmp, '\0', sizeof(tmp));
+void restore(const char *fname, Board *board) {
+    char buf[RECORD_LEN];
+    FILE *fp;
+
+    if (NULL == (fp = fopen(fname, "r"))) {
+        puts("Error: defective record file");
+        return;
     }
 
+    fgets(buf, sizeof(buf), fp);
+    board->width  = atoi(strtok(buf, ","));
+    board->height = atoi(strtok(NULL, ","));
+
+    fgets(buf, sizeof(buf), fp);
     fclose(fp);
-    return board_buf;
+
+    replay(board, buf);
 }
 
 void print_board(Board board, char** placeable) {

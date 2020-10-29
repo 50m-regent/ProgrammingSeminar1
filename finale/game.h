@@ -51,17 +51,37 @@ char **scout(
 
 // calculate and print score
 int print_score(
-    Board board // board
+    Board board, // board
+    int debug // print score or not
 );
 // return: who has more discs
 //     black: 1
 //     white: -1
 //     same: 0
 
+// undo
+void undo(
+    Board *board,
+    char *record[RECORD_LEN]
+);
+
 // run game
 int play_game(
     Board *board, // board
-    char record[RECORD_LEN] // game record
+    char record[RECORD_LEN], // game record
+    int debug, // print board or not
+    void (*player1)(
+        Board board,
+        char** placeable,
+        int *x,
+        int *y
+    ),
+    void (*player2)(
+        Board board,
+        char** placeable,
+        int *x,
+        int *y
+    )
 );
 // return: winner
 //     black: 1
@@ -70,7 +90,8 @@ int play_game(
 
 // post processing
 void endroll(
-    Board *board // board
+    Board *board, // board
+    int debug
 );
 
 #endif

@@ -74,7 +74,7 @@ char **scout(Board board, int *placeable_cnt, int turn) {
     return placeable;
 }
 
-int print_score(Board board) {
+int print_score(Board board, int debug) {
     int x, y, black = 0, white = 0;
     for (y = 0; y < board.height; y++) {
         for (x = 0; x < board.width; x++) {
@@ -86,12 +86,24 @@ int print_score(Board board) {
         }
     }
 
-    printf("Black %d : %d White\n", black, white);
+    if (debug) printf("Black %d : %d White\n", black, white);
 
     return (black > white) ? 1 : ((black < white) ? -1 : 0);
 }
 
-int play_game(Board *board, char *history) {
+void undo(Board *board, char *record[RECORD_LEN]) {
+    int
+        i, x = *record[strlen(*record) - 4] - ((*record[strlen(*record) - 4] > 'H') ? 'a' : 'A'),
+        y = *record[strlen(*record) - 3] - '1';
+
+    for (i = 0; i < 4; i++) {
+        *record[strlen(*record) - 1] = '\0';
+    }
+
+    replay(board, *record);
+}
+
+int play_game(Board *board, char *history, int debug, void (*player1)(Board board, char** placeable, int *x, int *y), void (*player2)(Board board, char** placeable, int *x, int *y)) {
     int
         x, y,
         turn = 0,
@@ -107,21 +119,32 @@ int play_game(Board *board, char *history) {
     while (2 > pass_cnt) {
         placeable = scout(*board, &placeable_cnt, turn = (turn + 1) % 2);
 
-        print_board(*board, placeable);
-        winner = print_score(*board);
-        printf("%s's turn\n", turn ? "Black" : "White");
+        if (debug) print_board(*board, placeable);
+        winner = print_score(*board, debug);
+        if (debug) printf("%s's turn\n", turn ? "Black" : "White");
 
         if (0 == placeable_cnt) {
             pass_cnt++;
-            puts("Pass");
-            sleep(1);
+            if (debug) {
+                puts("Pass");
+                sleep(1);
+            }
             continue;
         } else {
             pass_cnt = 0;
         }
 
-        get_human_input(*board, placeable, &x, &y);
-        
+        if (1 == turn) {
+            player1(*board, placeable, &x, &y);
+        } else {
+            player2(*board, placeable, &x, &y);
+        }
+        if (0 > x) {
+            undo(board, &record);
+            continue;
+        } else if (0 > y) {
+        }
+
         place(board, x, y, turn);
         sprintf(record, "%s%c%d", record, x + (turn ? 'A' : 'a'), y + 1);
         save_record(RECORD_PATH, record, *board);
@@ -131,16 +154,21 @@ int play_game(Board *board, char *history) {
     return winner;
 }
 
-void endroll(Board *board) {
+void endroll(Board *board, int debug) {
     int tmp;
-    print_board(*board, scout(*board, &tmp, 0));
-    puts("Game Finished!");
+    if (debug) {
+        print_board(*board, scout(*board, &tmp, 0));
+        puts("Game Finished!");
+    }
 
-    int winner = print_score(*board);
-    if (0 == winner) {
-        puts("Draw");
-    } else {
-        printf("Winner: %s!\n", (1 == winner) ? "Black" : "White");
+    int winner = print_score(*board, debug);
+
+    if (debug) {
+        if (0 == winner) {
+            puts("Draw");
+        } else {
+            printf("Winner: %s!\n", (1 == winner) ? "Black" : "White");
+        }
     }
 
     free_board(board);

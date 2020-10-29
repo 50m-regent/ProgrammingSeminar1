@@ -42,12 +42,17 @@ char **load_board(
 );
 // return: loaded board
 
+// replay with record
+void replay(
+    Board *board,
+    char record[RECORD_LEN]
+);
+
 // load board from record
-char **restore(
+void restore(
     const char *fname, // file name
     Board *board
 );
-// return: loaded board
 
 // print board
 void print_board(
