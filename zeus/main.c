@@ -32,9 +32,9 @@ const bitboard masks[] = {
     BMASK,
     TMASK,
     LMASK & BMASK,
-    LMASK & TMASK,
+    RMASK & TMASK,
     RMASK & BMASK,
-    RMASK & TMASK
+    LMASK & TMASK
 };
 
 bitboard coord2bit(int x, int y) {
@@ -45,7 +45,7 @@ bitboard coord2bit(int x, int y) {
     else return 1lu << (y * WIDTH + x);
 }
 
-bitboard get_human_input(bitboard placeable) {
+bitboard get_human_input(bitboard placeable, bitboard player, bitboard oppoenent) {
     bitboard input;
     int is_first = 1;
     char c, d, e;
@@ -65,7 +65,7 @@ bitboard get_human_input(bitboard placeable) {
     return input;
 }
 
-bitboard get_random_input(bitboard placeable) {
+bitboard get_random_input(bitboard placeable, bitboard player, bitboard opponent) {
     bitboard input;
     do {
         input = coord2bit(
@@ -108,6 +108,67 @@ bitboard scout(bitboard player, bitboard opponent) {
     db2 = db2 >> (WIDTH - 1) | db2 << (WIDTH - 1);
 
     return ~(player | opponent) & (hb | vb | db1 | db2);
+}
+
+void place(bitboard input, bitboard *player, bitboard *opponent) {
+    int i, j;
+    bitboard rev = 0, trans;
+    for (i = 0; i < 8; i++) {
+        trans = input;
+
+        for (j = 0; j < WIDTH; j++) {
+            trans |= *opponent & masks[i] & (directions[i] > 0 ? (trans >> directions[i]) : (trans << -directions[i]));
+        }
+        if ((trans | (directions[i] > 0 ? (trans >> directions[i]) : (trans << -directions[i]))) & *player & masks[i]) rev |= trans;
+    }
+
+    *player ^= rev;
+    *opponent ^= rev & *opponent;
+}
+
+int eval(bitboard placeable, bitboard player, bitboard opponent) {
+    return standing_bit(placeable);
+}
+
+int negamax(bitboard now, bitboard player, bitboard opponent, int depth, int a, int b) {
+    int x, y, mx = -1e8, score;
+    bitboard placeable;
+
+    place(now, &player, &opponent);
+    placeable = scout(player, opponent);
+
+    if (!depth) {
+        return eval(placeable, player, opponent);
+    }
+
+    for (y = 0; y < HEIGHT && a < b; y++) {
+        for (x = 0; x < WIDTH && a < b; x++) {
+            if (placeable >> (y * WIDTH + x) & 1) {
+                score = -negamax(now = coord2bit(x, y), opponent, player, depth - 1, -b, -a);
+                if (a < score) a = score;
+            }
+        }
+    }
+
+    return score;
+}
+
+bitboard get_negamax_input(bitboard placeable, bitboard player, bitboard opponent) {
+    int x, y, mx = -1e8, score;
+    bitboard now, ret;
+
+    for (y = 0; y < HEIGHT; y++) {
+        for (x = 0; x < WIDTH; x++) {
+            if (placeable >> (y * WIDTH + x) & 1) {
+                score = negamax(now = coord2bit(x, y), player, opponent, 6, -1e8, 1e8);
+                if (score > mx) {
+                    mx = score;
+                    ret = now;
+                }
+            }
+        }
+    }
+    return ret;
 }
 
 void print_board(bitboard black, bitboard white, bitboard placeable) {
@@ -159,26 +220,7 @@ int print_score(bitboard black, bitboard white, int debug) {
         1 : ((standing_bit(black) < standing_bit(white)) ? -1 : 0);
 }
 
-void place(bitboard input, bitboard *player, bitboard *opponent) {
-    int i, j;
-    bitboard rev = 0, trans;
-    for (i = 0; i < 8; i++) {
-        trans = input;
-
-        for (j = 0; j < WIDTH; j++) {
-            if (directions > 0) {
-
-            }
-            trans |= *opponent & masks[i] & (directions[i] > 0 ? (trans >> directions[i]) : (trans << -directions[i]));
-        }
-        if ((trans | (directions[i] > 0 ? (trans >> directions[i]) : (trans << -directions[i]))) & *player) rev |= trans;
-    }
-
-    *player ^= rev;
-    *opponent ^= rev & *opponent;
-}
-
-int play(bitboard black, bitboard white, int debug, bitboard (*player1)(bitboard placeable), bitboard (*player2)(bitboard placeable)) {
+int play(bitboard black, bitboard white, int debug, bitboard (*player1)(bitboard placeable, bitboard player, bitboard opponent), bitboard (*player2)(bitboard placeable, bitboard player, bitboard opponent)) {
     int pass_cnt = 0, turn = 0, winner;
     bitboard placeable, input;
 
@@ -191,6 +233,7 @@ int play(bitboard black, bitboard white, int debug, bitboard (*player1)(bitboard
 
         if (0 == standing_bit(placeable)) {
             pass_cnt++;
+            turn = (turn + 1) % 2;
             if (debug) {
                 puts("Pass");
                 sleep(1);
@@ -200,7 +243,7 @@ int play(bitboard black, bitboard white, int debug, bitboard (*player1)(bitboard
             pass_cnt = 0;
         }
 
-        input = turn ? player2(placeable) : player1(placeable);
+        input = turn ? player2(placeable, white, black) : player1(placeable, black, white);
 
         if (0 == turn) {
             place(input, &black, &white);
@@ -224,10 +267,8 @@ int main() {
 
     bitboard black, white;
 
-    for (int i = 0; i < 1000; i++) {
-        board_init(&black, &white);
-        play(black, white, 0, get_random_input, get_random_input);
-    }
+    board_init(&black, &white);
+    play(black, white, 1, get_negamax_input, get_human_input);
 
     return EXIT_SUCCESS;
 }
