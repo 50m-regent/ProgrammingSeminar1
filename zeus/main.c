@@ -110,7 +110,16 @@ bitboard scout(bitboard player, bitboard opponent) {
     return ~(player | opponent) & (hb | vb | db1 | db2);
 }
 
-void place(bitboard input, bitboard *player, bitboard *opponent) {
+void print_bit(bitboard n) {
+    for (int y = 0; y < HEIGHT; y++) {
+        for (int x = 0; x < WIDTH; x++) {
+            printf("%d", n >> (y * WIDTH + x) & 1);
+        }
+        puts("");
+    }
+}
+
+bitboard place(bitboard input, bitboard *player, bitboard *opponent) {
     int i, j;
     bitboard rev = 0, trans;
     for (i = 0; i < 8; i++) {
@@ -124,21 +133,23 @@ void place(bitboard input, bitboard *player, bitboard *opponent) {
 
     *player ^= rev;
     *opponent ^= rev & *opponent;
+
+    return rev;
 }
 
-int eval(bitboard placeable, bitboard player, bitboard opponent) {
-    return standing_bit(placeable);
+int eval(bitboard placeable, bitboard victim, bitboard player, bitboard opponent) {
+    return -victim + standing_bit(placeable);
 }
 
 int negamax(bitboard now, bitboard player, bitboard opponent, int depth, int a, int b) {
     int x, y, mx = -1e8, score;
-    bitboard placeable;
+    bitboard placeable, victim;
 
-    place(now, &player, &opponent);
+    victim = place(now, &player, &opponent);
     placeable = scout(player, opponent);
 
     if (!depth) {
-        return eval(placeable, player, opponent);
+        return eval(placeable, victim, player, opponent);
     }
 
     for (y = 0; y < HEIGHT && a < b; y++) {
@@ -222,7 +233,7 @@ int print_score(bitboard black, bitboard white, int debug) {
 
 int play(bitboard black, bitboard white, int debug, bitboard (*player1)(bitboard placeable, bitboard player, bitboard opponent), bitboard (*player2)(bitboard placeable, bitboard player, bitboard opponent)) {
     int pass_cnt = 0, turn = 0, winner;
-    bitboard placeable, input;
+    bitboard placeable, input, victim;
 
     while (2 > pass_cnt) {
         placeable = (0 == turn) ? scout(black, white) : scout(white, black);
@@ -246,10 +257,12 @@ int play(bitboard black, bitboard white, int debug, bitboard (*player1)(bitboard
         input = turn ? player2(placeable, white, black) : player1(placeable, black, white);
 
         if (0 == turn) {
-            place(input, &black, &white);
+            victim = place(input, &black, &white);
         } else {
-            place(input, &white, &black);
+            victim = place(input, &white, &black);
         }
+
+        print_bit(victim);
 
         turn = (turn + 1) % 2;
     }
@@ -268,7 +281,7 @@ int main() {
     bitboard black, white;
 
     board_init(&black, &white);
-    play(black, white, 1, get_negamax_input, get_human_input);
+    play(black, white, 1, get_negamax_input, get_random_input);
 
     return EXIT_SUCCESS;
 }
