@@ -138,7 +138,11 @@ bitboard place(bitboard input, bitboard *player, bitboard *opponent) {
 }
 
 int eval(bitboard placeable, bitboard victim, bitboard player, bitboard opponent) {
-    return -victim + standing_bit(placeable);
+    if (standing_bit(player | opponent) < 40) {
+        return standing_bit(placeable);
+    } else {
+        return standing_bit(player);
+    }
 }
 
 int negamax(bitboard now, bitboard player, bitboard opponent, int depth, int a, int b) {
@@ -147,6 +151,10 @@ int negamax(bitboard now, bitboard player, bitboard opponent, int depth, int a, 
 
     victim = place(now, &player, &opponent);
     placeable = scout(player, opponent);
+
+    if (standing_bit(player | opponent) < 20) {
+        return -standing_bit(victim);
+    }
 
     if (!depth) {
         return eval(placeable, victim, player, opponent);
@@ -166,12 +174,13 @@ int negamax(bitboard now, bitboard player, bitboard opponent, int depth, int a, 
 
 bitboard get_negamax_input(bitboard placeable, bitboard player, bitboard opponent) {
     int x, y, mx = -1e8, score;
-    bitboard now, ret;
+    bitboard now, ret = 0;
 
     for (y = 0; y < HEIGHT; y++) {
         for (x = 0; x < WIDTH; x++) {
             if (placeable >> (y * WIDTH + x) & 1) {
-                score = negamax(now = coord2bit(x, y), player, opponent, 6, -1e8, 1e8);
+                score = negamax(now = coord2bit(x, y), player, opponent, 7, -1e8, 1e8);
+
                 if (score > mx) {
                     mx = score;
                     ret = now;
@@ -262,6 +271,7 @@ int play(bitboard black, bitboard white, int debug, bitboard (*player1)(bitboard
             victim = place(input, &white, &black);
         }
 
+        print_bit(input);
         print_bit(victim);
 
         turn = (turn + 1) % 2;
