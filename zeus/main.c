@@ -37,6 +37,22 @@ const bitboard masks[] = {
     LMASK & TMASK
 };
 
+const int scores[] = {
+    30,
+    -1,
+    -3,
+    -12,
+    -15
+};
+
+const bitboard score_masks[] = {
+    0x8100000000000081ul,
+    0x180018bdbd180018ul,
+    0x003c424242423c00ul,
+    0x4281000000008142ul,
+    0x0042000000004200ul
+};
+
 bitboard coord2bit(int x, int y) {
     if (
         x < 0 || x >= WIDTH ||
@@ -113,7 +129,7 @@ bitboard scout(bitboard player, bitboard opponent) {
 void print_bit(bitboard n) {
     for (int y = 0; y < HEIGHT; y++) {
         for (int x = 0; x < WIDTH; x++) {
-            printf("%d", n >> (y * WIDTH + x) & 1);
+            printf("%llu", n >> (y * WIDTH + x) & 1);
         }
         puts("");
     }
@@ -137,27 +153,36 @@ bitboard place(bitboard input, bitboard *player, bitboard *opponent) {
     return rev;
 }
 
-int eval(bitboard placeable, bitboard victim, bitboard player, bitboard opponent) {
-    if (standing_bit(player | opponent) < 40) {
-        return standing_bit(placeable);
+int eval(bitboard placeable, bitboard player, bitboard opponent) {
+    if (standing_bit(~(player | opponent)) < 15) {
+        return standing_bit(player) - standing_bit(opponent);
+    }
+
+    int bp = 0, cn, i;
+    for (i = 0; i < 5; i++) {
+        bp += scores[i] * (standing_bit(player & score_masks[i]) - standing_bit(opponent & score_masks[i]));
+    }
+
+    cn = -standing_bit(placeable);
+
+    if (standing_bit(~(player | opponent)) < 30) {
+        return bp + cn;
+    } else if (standing_bit(~(player | opponent)) < 40) {
+        return bp + 3 * cn;
     } else {
-        return standing_bit(player);
+        return bp + 5 * cn;
     }
 }
 
 int negamax(bitboard now, bitboard player, bitboard opponent, int depth, int a, int b) {
-    int x, y, mx = -1e8, score;
-    bitboard placeable, victim;
+    int x, y, score;
+    bitboard placeable;
 
-    victim = place(now, &player, &opponent);
+    place(now, &player, &opponent);
     placeable = scout(player, opponent);
 
-    if (standing_bit(player | opponent) < 20) {
-        return -standing_bit(victim);
-    }
-
-    if (!depth) {
-        return eval(placeable, victim, player, opponent);
+    if (!depth || !standing_bit(placeable)) {
+        return eval(placeable, player, opponent);
     }
 
     for (y = 0; y < HEIGHT && a < b; y++) {
@@ -179,7 +204,7 @@ bitboard get_negamax_input(bitboard placeable, bitboard player, bitboard opponen
     for (y = 0; y < HEIGHT; y++) {
         for (x = 0; x < WIDTH; x++) {
             if (placeable >> (y * WIDTH + x) & 1) {
-                score = negamax(now = coord2bit(x, y), player, opponent, 7, -1e8, 1e8);
+                score = negamax(now = coord2bit(x, y), player, opponent, 4, -1e8, 1e8);
 
                 if (score > mx) {
                     mx = score;
@@ -235,12 +260,17 @@ void print_board(bitboard black, bitboard white, bitboard placeable) {
 }
 
 int print_score(bitboard black, bitboard white, int debug) {
-    if (debug) printf("Black %d : %d White\n", standing_bit(black), standing_bit(white));
+    if (debug) printf("⚫️ %d : %d ⚪️\n", standing_bit(black), standing_bit(white));
     return (standing_bit(black) > standing_bit(white)) ?
         1 : ((standing_bit(black) < standing_bit(white)) ? -1 : 0);
 }
 
-int play(bitboard black, bitboard white, int debug, bitboard (*player1)(bitboard placeable, bitboard player, bitboard opponent), bitboard (*player2)(bitboard placeable, bitboard player, bitboard opponent)) {
+int play(
+    bitboard black, bitboard white,
+    int debug,
+    bitboard (*player1)(bitboard placeable, bitboard player, bitboard opponent),
+    bitboard (*player2)(bitboard placeable, bitboard player, bitboard opponent)
+) {
     int pass_cnt = 0, turn = 0, winner;
     bitboard placeable, input, victim;
 
@@ -249,7 +279,7 @@ int play(bitboard black, bitboard white, int debug, bitboard (*player1)(bitboard
 
         if (debug) print_board(black, white, placeable);
         winner = print_score(black, white, debug);
-        if (debug) printf("%s's turn\n", turn ? "White" : "Black");
+        if (debug) printf("%s's turn\n", turn ? "⚪️" : "⚫️");
 
         if (0 == standing_bit(placeable)) {
             pass_cnt++;
@@ -271,9 +301,6 @@ int play(bitboard black, bitboard white, int debug, bitboard (*player1)(bitboard
             victim = place(input, &white, &black);
         }
 
-        print_bit(input);
-        print_bit(victim);
-
         turn = (turn + 1) % 2;
     }
 
@@ -285,13 +312,27 @@ void board_init(bitboard *black, bitboard *white) {
     *white = coord2bit(WIDTH / 2 - 1, HEIGHT / 2 - 1) | coord2bit(WIDTH / 2, HEIGHT / 2);
 }
 
+void verify(
+    int epoch,
+    bitboard (*player1)(bitboard placeable, bitboard player, bitboard opponent),
+    bitboard (*player2)(bitboard placeable, bitboard player, bitboard opponent)
+) {
+    bitboard black, white;
+    int sum = 0;
+
+    for (int i = 0; i < epoch; i++) {
+        printf("Game%d\n", i + 1);
+        board_init(&black, &white);
+        sum += play(black, white, 0, player1, player2);
+    }
+
+    printf("winrate: %d\n", sum);
+}
+
 int main() {
     srand((unsigned)time(NULL));
 
-    bitboard black, white;
-
-    board_init(&black, &white);
-    play(black, white, 1, get_negamax_input, get_random_input);
-
+    verify(1000, get_negamax_input, get_random_input);
+    
     return EXIT_SUCCESS;
 }
