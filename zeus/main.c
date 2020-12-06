@@ -2,219 +2,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
-
-#define WIDTH 8
-#define HEIGHT 8
-
-#define LMASK 0xfefefefefefefefeul
-#define RMASK 0x7f7f7f7f7f7f7f7ful
-#define HMASK LMASK & RMASK
-#define TMASK 0xffffffffffffff00ul
-#define BMASK 0x00fffffffffffffful
-#define VMASK TMASK & BMASK
-
-typedef unsigned long long bitboard;
-
-const int directions[] = {
-    1,
-    -1,
-    WIDTH,
-    -WIDTH,
-    WIDTH - 1,
-    -WIDTH + 1,
-    WIDTH + 1,
-    -WIDTH - 1
-};
-
-const bitboard masks[] = {
-    RMASK,
-    LMASK,
-    BMASK,
-    TMASK,
-    LMASK & BMASK,
-    RMASK & TMASK,
-    RMASK & BMASK,
-    LMASK & TMASK
-};
-
-const int scores[] = {
-    30,
-    -1,
-    -3,
-    -12,
-    -15
-};
-
-const bitboard score_masks[] = {
-    0x8100000000000081ul,
-    0x180018bdbd180018ul,
-    0x003c424242423c00ul,
-    0x4281000000008142ul,
-    0x0042000000004200ul
-};
-
-bitboard coord2bit(int x, int y) {
-    if (
-        x < 0 || x >= WIDTH ||
-        y < 0 || y >= HEIGHT
-    ) return 0;
-    else return 1lu << (y * WIDTH + x);
-}
-
-bitboard get_human_input(bitboard placeable, bitboard player, bitboard oppoenent) {
-    bitboard input;
-    int is_first = 1;
-    char c, d, e;
-    do {
-        if (is_first) {
-            is_first = 0;
-        } else {
-            puts("Defective input!");
-        }
-
-        printf("Input (ex: a1) <<");
-        scanf("%c%c%c", &c, &d, &e);
-
-        input = coord2bit(c - 'a', d - '1');
-    } while (!(input & placeable));
-
-    return input;
-}
-
-bitboard get_random_input(bitboard placeable, bitboard player, bitboard opponent) {
-    bitboard input;
-    do {
-        input = coord2bit(
-            rand() % WIDTH,
-            rand() % HEIGHT
-        );
-    } while(!(placeable & input));
-
-    return input;
-}
-
-int standing_bit(bitboard x) {
-    x -= (x >> 1 & 0x5555555555555555ul);
-    x = (x >> 2  & 0x3333333333333333ul) + (x & 0x3333333333333333ul);
-    x = ((x + (x >> 4))  & 0x0f0f0f0f0f0f0f0ful);
-    x = (x * 0x0101010101010101ul) >> 56;
-    return x;
-}
-
-bitboard scout(bitboard player, bitboard opponent) {
-    bitboard
-        hm = opponent & HMASK,
-        vm = opponent & VMASK,
-        dw = hm & vm,
-        hb = hm & (player >> 1 | player << 1),
-        vb = vm & (player >> WIDTH | player << WIDTH),
-        db1 = dw & (player >> (WIDTH + 1) | player << (WIDTH + 1)),
-        db2 = dw & (player >> (WIDTH - 1) | player << (WIDTH - 1));
-
-    for (int i = 0; i < 5; i++) {
-        hb |= hm & (hb >> 1 | hb << 1);
-        vb |= vm & (vb >> WIDTH | vb << WIDTH);
-        db1 |= dw & (db1 >> (WIDTH + 1) | db1 << (WIDTH + 1));
-        db2 |= dw & (db2 >> (WIDTH - 1) | db2 << (WIDTH - 1));
-    }
-
-    hb = hb >> 1 | hb << 1;
-    vb = vb >> WIDTH | vb << WIDTH;
-    db1 = db1 >> (WIDTH + 1) | db1 << (WIDTH + 1);
-    db2 = db2 >> (WIDTH - 1) | db2 << (WIDTH - 1);
-
-    return ~(player | opponent) & (hb | vb | db1 | db2);
-}
-
-void print_bit(bitboard n) {
-    for (int y = 0; y < HEIGHT; y++) {
-        for (int x = 0; x < WIDTH; x++) {
-            printf("%llu", n >> (y * WIDTH + x) & 1);
-        }
-        puts("");
-    }
-}
-
-bitboard place(bitboard input, bitboard *player, bitboard *opponent) {
-    int i, j;
-    bitboard rev = 0, trans;
-    for (i = 0; i < 8; i++) {
-        trans = input;
-
-        for (j = 0; j < WIDTH; j++) {
-            trans |= *opponent & masks[i] & (directions[i] > 0 ? (trans >> directions[i]) : (trans << -directions[i]));
-        }
-        if ((trans | (directions[i] > 0 ? (trans >> directions[i]) : (trans << -directions[i]))) & *player & masks[i]) rev |= trans;
-    }
-
-    *player ^= rev;
-    *opponent ^= rev & *opponent;
-
-    return rev;
-}
-
-int eval(bitboard placeable, bitboard player, bitboard opponent) {
-    if (standing_bit(~(player | opponent)) < 15) {
-        return standing_bit(player) - standing_bit(opponent);
-    }
-
-    int bp = 0, cn, i;
-    for (i = 0; i < 5; i++) {
-        bp += scores[i] * (standing_bit(player & score_masks[i]) - standing_bit(opponent & score_masks[i]));
-    }
-
-    cn = -standing_bit(placeable);
-
-    if (standing_bit(~(player | opponent)) < 30) {
-        return bp + cn;
-    } else if (standing_bit(~(player | opponent)) < 40) {
-        return bp + 3 * cn;
-    } else {
-        return bp + 5 * cn;
-    }
-}
-
-int negamax(bitboard now, bitboard player, bitboard opponent, int depth, int a, int b) {
-    int x, y, score;
-    bitboard placeable;
-
-    place(now, &player, &opponent);
-    placeable = scout(player, opponent);
-
-    if (!depth || !standing_bit(placeable)) {
-        return eval(placeable, player, opponent);
-    }
-
-    for (y = 0; y < HEIGHT && a < b; y++) {
-        for (x = 0; x < WIDTH && a < b; x++) {
-            if (placeable >> (y * WIDTH + x) & 1) {
-                score = -negamax(now = coord2bit(x, y), opponent, player, depth - 1, -b, -a);
-                if (a < score) a = score;
-            }
-        }
-    }
-
-    return score;
-}
-
-bitboard get_negamax_input(bitboard placeable, bitboard player, bitboard opponent) {
-    int x, y, mx = -1e8, score;
-    bitboard now, ret = 0;
-
-    for (y = 0; y < HEIGHT; y++) {
-        for (x = 0; x < WIDTH; x++) {
-            if (placeable >> (y * WIDTH + x) & 1) {
-                score = negamax(now = coord2bit(x, y), player, opponent, 4, -1e8, 1e8);
-
-                if (score > mx) {
-                    mx = score;
-                    ret = now;
-                }
-            }
-        }
-    }
-    return ret;
-}
+#include "const.h"
+#include "bitboard.h"
+#include "input.h"
 
 void print_board(bitboard black, bitboard white, bitboard placeable) {
     system("clear");
@@ -266,7 +56,7 @@ int print_score(bitboard black, bitboard white, int debug) {
 }
 
 int play(
-    bitboard black, bitboard white,
+    bitboard *black, bitboard *white,
     int debug,
     bitboard (*player1)(bitboard placeable, bitboard player, bitboard opponent),
     bitboard (*player2)(bitboard placeable, bitboard player, bitboard opponent)
@@ -275,10 +65,10 @@ int play(
     bitboard placeable, input, victim;
 
     while (2 > pass_cnt) {
-        placeable = (0 == turn) ? scout(black, white) : scout(white, black);
+        placeable = (0 == turn) ? scout(*black, *white) : scout(*white, *black);
 
-        if (debug) print_board(black, white, placeable);
-        winner = print_score(black, white, debug);
+        if (debug) print_board(*black, *white, placeable);
+        winner = print_score(*black, *white, debug);
         if (debug) printf("%s's turn\n", turn ? "⚪️" : "⚫️");
 
         if (0 == standing_bit(placeable)) {
@@ -293,12 +83,12 @@ int play(
             pass_cnt = 0;
         }
 
-        input = turn ? player2(placeable, white, black) : player1(placeable, black, white);
+        input = turn ? player2(placeable, *white, *black) : player1(placeable, *black, *white);
 
         if (0 == turn) {
-            victim = place(input, &black, &white);
+            victim = place(input, black, white);
         } else {
-            victim = place(input, &white, &black);
+            victim = place(input, white, black);
         }
 
         turn = (turn + 1) % 2;
@@ -318,21 +108,42 @@ void verify(
     bitboard (*player2)(bitboard placeable, bitboard player, bitboard opponent)
 ) {
     bitboard black, white;
-    int sum = 0;
+    int bsum = 0, wsum = 0;
 
     for (int i = 0; i < epoch; i++) {
-        printf("Game%d\n", i + 1);
         board_init(&black, &white);
-        sum += play(black, white, 0, player1, player2);
+        if (play(&black, &white, 0, player1, player2) > 0) bsum++;
+        print_board(black, white, 0);
+        printf("Game%d\n", i + 1);
+        print_score(black, white, 1);
     }
 
-    printf("winrate: %d\n", sum);
+    for (int i = 0; i < epoch; i++) {
+        board_init(&black, &white);
+        if (play(&black, &white, 0, player2, player1) < 0) wsum++;
+        print_board(black, white, 0);
+        printf("Game%d\n", i + 1);
+        print_score(black, white, 1);
+    }
+
+    printf("As black winrate: %lf\n", (double)bsum / epoch);
+    printf("As white winrate: %lf\n", (double)wsum / epoch);
 }
 
 int main() {
     srand((unsigned)time(NULL));
 
-    verify(1000, get_negamax_input, get_random_input);
+    // verify(1000, get_negamax_input, get_random_input);
+
+    for(int i = 0; i < 5; i++) {
+        int t = rand();
+        print_bit(t);
+        printf("%d\n", standing_bit(t));
+    }
+
+    bitboard black, white;
+    board_init(&black, &white);
+    play(&black, &white, 1, get_human_input, get_human_input);
     
     return EXIT_SUCCESS;
 }

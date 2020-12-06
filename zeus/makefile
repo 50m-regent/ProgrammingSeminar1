@@ -1,6 +1,6 @@
 CC = gcc
 
-main: main.c
+main: main.c bitboard.c input.c
 	$(CC) $^ -o $@
 
 clean:
