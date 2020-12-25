@@ -132,15 +132,6 @@ void verify(
 
 int main() {
     srand((unsigned)time(NULL));
-
-    // verify(1000, get_negamax_input, get_random_input);
-
-    for(int i = 0; i < 5; i++) {
-        int t = rand();
-        print_bit(t);
-        printf("%d\n", standing_bit(t));
-    }
-
     bitboard black, white;
     board_init(&black, &white);
     play(&black, &white, 1, get_human_input, get_human_input);
